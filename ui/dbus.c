@@ -31,7 +31,7 @@
 #include "qapi-types-char.h"
 #include "system/system.h"
 #include "ui/dbus-module.h"
-#ifdef CONFIG_OPENGL
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
 #include "ui/egl-helpers.h"
 #include "ui/egl-context.h"
 #endif
@@ -46,7 +46,7 @@
 
 static DBusDisplay *dbus_display;
 
-#ifdef CONFIG_OPENGL
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
 static QEMUGLContext dbus_create_context(DisplayGLCtx *dgc,
                                          QEMUGLParams *params)
 {
@@ -119,7 +119,7 @@ dbus_display_init(Object *o)
     DBusDisplay *dd = DBUS_DISPLAY(o);
     g_autoptr(GDBusObjectSkeleton) vm = NULL;
 
-#ifdef CONFIG_OPENGL
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
     dd->glctx.ops = &dbus_gl_ops;
     if (display_opengl) {
         dd->glctx.gls = qemu_gl_init_shader();
@@ -163,7 +163,7 @@ dbus_display_finalize(Object *o)
     g_clear_object(&dd->iface);
     g_free(dd->dbus_addr);
     g_free(dd->audiodev);
-#ifdef CONFIG_OPENGL
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
     g_clear_pointer(&dd->glctx.gls, qemu_gl_fini_shader);
 #endif
     dbus_display = NULL;
@@ -631,7 +631,7 @@ early_dbus_init(DisplayOptions *opts)
     DisplayGLMode mode = opts->has_gl ? opts->gl : DISPLAY_GL_MODE_OFF;
 
     if (mode != DISPLAY_GL_MODE_OFF) {
-#ifdef CONFIG_OPENGL
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
         egl_init(opts->u.dbus.rendernode, mode, &error_fatal);
 #else
         error_report("dbus: GL rendering is not supported");
@@ -707,6 +707,6 @@ static void register_dbus(void)
 
 type_init(register_dbus);
 
-#ifdef CONFIG_OPENGL
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
 module_dep("ui-opengl");
 #endif

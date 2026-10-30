@@ -59,7 +59,7 @@ int egl_create_fence(EGLSyncKHR sync);
 
 #endif
 
-EGLSurface qemu_egl_init_surface_x11(EGLContext ectx, EGLNativeWindowType win);
+EGLSurface qemu_egl_init_surface(EGLContext ectx, EGLNativeWindowType win);
 
 #if defined(CONFIG_X11) || defined(CONFIG_GBM) || defined(WIN32)
 EGLDisplay qemu_egl_get_display(EGLNativeDisplayType native,
@@ -75,6 +75,10 @@ int qemu_egl_init_dpy_mesa(EGLNativeDisplayType dpy, DisplayGLMode mode);
 
 #ifdef WIN32
 int qemu_egl_init_dpy_win32(EGLNativeDisplayType dpy, DisplayGLMode mode);
+#endif
+
+#ifdef CONFIG_COCOA
+int qemu_egl_init_dpy_cocoa(DisplayGLMode mode);
 #endif
 
 EGLContext qemu_egl_init_ctx(void);

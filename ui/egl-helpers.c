@@ -467,7 +467,7 @@ int egl_create_fence(EGLSyncKHR sync)
 
 /* ---------------------------------------------------------------------- */
 
-EGLSurface qemu_egl_init_surface_x11(EGLContext ectx, EGLNativeWindowType win)
+EGLSurface qemu_egl_init_surface(EGLContext ectx, EGLNativeWindowType win)
 {
     EGLSurface esurface;
     EGLBoolean b;
@@ -539,10 +539,9 @@ EGLDisplay qemu_egl_get_display(EGLNativeDisplayType native,
     }
     return dpy;
 }
+#endif
 
-static int qemu_egl_init_dpy(EGLNativeDisplayType dpy,
-                             EGLenum platform,
-                             DisplayGLMode mode)
+static int qemu_egl_init_dpy(EGLDisplay dpy, DisplayGLMode mode)
 {
     static const EGLint conf_att_core[] = {
         EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
@@ -567,7 +566,7 @@ static int qemu_egl_init_dpy(EGLNativeDisplayType dpy,
     EGLint n;
     bool gles = (mode == DISPLAY_GL_MODE_ES);
 
-    qemu_egl_display = qemu_egl_get_display(dpy, platform);
+    qemu_egl_display = dpy;
     if (qemu_egl_display == EGL_NO_DISPLAY) {
         error_report("egl: eglGetDisplay failed: %s", qemu_egl_get_error_string());
         return -1;
@@ -599,25 +598,35 @@ static int qemu_egl_init_dpy(EGLNativeDisplayType dpy,
     return 0;
 }
 
-#endif
-
 #if defined(CONFIG_X11) || defined(CONFIG_GBM)
 int qemu_egl_init_dpy_x11(EGLNativeDisplayType dpy, DisplayGLMode mode)
 {
 #ifdef EGL_KHR_platform_x11
-    return qemu_egl_init_dpy(dpy, EGL_PLATFORM_X11_KHR, mode);
+    EGLDisplay edpy = qemu_egl_get_display(dpy, EGL_PLATFORM_X11_KHR);
 #else
-    return qemu_egl_init_dpy(dpy, 0, mode);
+    EGLDisplay edpy = qemu_egl_get_display(dpy, 0);
 #endif
+
+    return qemu_egl_init_dpy(edpy, mode);
 }
 
 int qemu_egl_init_dpy_mesa(EGLNativeDisplayType dpy, DisplayGLMode mode)
 {
 #ifdef EGL_MESA_platform_gbm
-    return qemu_egl_init_dpy(dpy, EGL_PLATFORM_GBM_MESA, mode);
+    EGLDisplay edpy = qemu_egl_get_display(dpy, EGL_PLATFORM_GBM_MESA);
 #else
-    return qemu_egl_init_dpy(dpy, 0, mode);
+    EGLDisplay edpy = qemu_egl_get_display(dpy, 0);
 #endif
+
+    return qemu_egl_init_dpy(edpy, mode);
+}
+#endif
+
+#ifdef CONFIG_COCOA
+int qemu_egl_init_dpy_cocoa(DisplayGLMode mode)
+{
+    /* ANGLE provides the EGL display implementation on macOS */
+    return qemu_egl_init_dpy(eglGetDisplay(EGL_DEFAULT_DISPLAY), mode);
 }
 #endif
 
@@ -630,7 +639,7 @@ int qemu_egl_init_dpy_win32(EGLNativeDisplayType dpy, DisplayGLMode mode)
         mode = DISPLAY_GL_MODE_ES;
     }
 
-    if (qemu_egl_init_dpy(dpy, 0, mode) < 0) {
+    if (qemu_egl_init_dpy(qemu_egl_get_display(dpy, 0), mode) < 0) {
         return -1;
     }
 

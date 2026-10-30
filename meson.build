@@ -1231,7 +1231,7 @@ if get_option('attr').allowed()
 endif
 
 cocoa = dependency('appleframeworks',
-                   modules: ['Cocoa', 'CoreVideo', 'QuartzCore'],
+                   modules: ['Cocoa', 'CoreVideo', 'OpenGL', 'QuartzCore'],
                    required: get_option('cocoa'))
 
 vmnet = dependency('appleframeworks', modules: 'vmnet', required: get_option('vmnet'))
@@ -1780,14 +1780,13 @@ if not get_option('coreaudio').auto() or (host_os == 'darwin' and have_system)
                          required: get_option('coreaudio'))
 endif
 
+egl = not_found
 opengl = not_found
 if not get_option('opengl').auto() or have_system or have_vhost_user_gpu
-  epoxy = dependency('epoxy', method: 'pkg-config',
+  opengl = dependency('epoxy', method: 'pkg-config',
                       required: get_option('opengl'))
-  if cc.has_header('epoxy/egl.h', dependencies: epoxy)
-    opengl = epoxy
-  elif get_option('opengl').enabled()
-    error('epoxy/egl.h not found')
+  if cc.has_header('epoxy/egl.h', dependencies: opengl)
+    egl = opengl
   endif
 endif
 gbm = not_found
@@ -2484,6 +2483,7 @@ if numa.found()
                                        dependencies: numa))
 endif
 config_host_data.set('CONFIG_OPENGL', opengl.found())
+config_host_data.set('CONFIG_EGL', egl.found())
 config_host_data.set('CONFIG_PLUGIN', get_option('plugins'))
 config_host_data.set('CONFIG_RBD', rbd.found())
 config_host_data.set('CONFIG_RDMA', rdma.found())
